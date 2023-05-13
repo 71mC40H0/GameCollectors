@@ -22,7 +22,7 @@ class SendEmailServiceTest {
     private String toEmail;
 
     @Value(value = "${mailgun.api.domain}")
-    private String mailgunKey;
+    private String mailgunApiDomain;
 
     @Test
     void sendEmailTest() {
@@ -38,6 +38,6 @@ class SendEmailServiceTest {
         String response = sendEmailService.sendEmail(form).getBody();
 
         //then
-        assertTrue(Objects.requireNonNull(response).contains(mailgunKey));
+        assertTrue(Objects.requireNonNull(response).contains(mailgunApiDomain));
     }
 }
