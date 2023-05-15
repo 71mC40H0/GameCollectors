@@ -1,4 +1,4 @@
-package com.zerobase.gamecollectors.form;
+package com.zerobase.gamecollectors.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Getter
 @Builder
-public class SendEmailForm {
+public class SendEmailServiceDto {
 
     private String from;
     private String to;

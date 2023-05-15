@@ -2,7 +2,7 @@ package com.zerobase.gamecollectors.service;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.zerobase.gamecollectors.form.SendEmailForm;
+import com.zerobase.gamecollectors.dto.SendEmailServiceDto;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ class SendEmailServiceTest {
     @Test
     void sendEmailTest() {
         //given
-        SendEmailForm form = SendEmailForm.builder()
+        SendEmailServiceDto serviceDto = SendEmailServiceDto.builder()
             .from(fromEmail)
             .to(toEmail)
             .subject("Subject of Test Email")
@@ -35,7 +35,7 @@ class SendEmailServiceTest {
             .build();
 
         //when
-        String response = sendEmailService.sendEmail(form).getBody();
+        String response = sendEmailService.sendEmail(serviceDto).getBody();
 
         //then
         assertTrue(Objects.requireNonNull(response).contains(mailgunApiDomain));
