@@ -1,4 +1,4 @@
-package com.zerobase.gamecollectors.dto;
+package com.zerobase.gamecollectors.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

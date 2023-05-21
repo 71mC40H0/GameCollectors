@@ -2,7 +2,7 @@ package com.zerobase.gamecollectors.service;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.zerobase.gamecollectors.dto.SendEmailServiceDto;
+import com.zerobase.gamecollectors.model.SendEmailServiceDto;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +15,11 @@ class SendEmailServiceTest {
     @Autowired
     private SendEmailService sendEmailService;
 
-    @Value(value = "${mailgun.api.fromEmail}")
-    private String fromEmail;
+    @Value(value = "${mailgun.api.emailSender}")
+    private String emailSender;
 
-    @Value(value = "${mailgun.api.toEmail}")
-    private String toEmail;
+    @Value(value = "${mailgun.api.emailReceiver}")
+    private String emailReceiver;
 
     @Value(value = "${mailgun.api.domain}")
     private String mailgunApiDomain;
@@ -28,8 +28,8 @@ class SendEmailServiceTest {
     void sendEmailTest() {
         //given
         SendEmailServiceDto serviceDto = SendEmailServiceDto.builder()
-            .from(fromEmail)
-            .to(toEmail)
+            .from(emailSender)
+            .to(emailReceiver)
             .subject("Subject of Test Email")
             .text("Text of Test Email")
             .build();

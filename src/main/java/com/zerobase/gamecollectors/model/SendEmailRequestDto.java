@@ -1,4 +1,4 @@
-package com.zerobase.gamecollectors.dto;
+package com.zerobase.gamecollectors.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +18,7 @@ public class SendEmailRequestDto {
 
     public SendEmailServiceDto toServiceDto() {
         return SendEmailServiceDto.builder()
-            .from(this.from)
+            .from(this.getFrom())
             .to(this.getTo())
             .subject(this.getSubject())
             .text(this.getText())

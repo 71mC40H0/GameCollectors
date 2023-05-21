@@ -1,6 +1,6 @@
 package com.zerobase.gamecollectors.controller;
 
-import com.zerobase.gamecollectors.dto.SendEmailRequestDto;
+import com.zerobase.gamecollectors.model.SendEmailRequestDto;
 import com.zerobase.gamecollectors.service.SendEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

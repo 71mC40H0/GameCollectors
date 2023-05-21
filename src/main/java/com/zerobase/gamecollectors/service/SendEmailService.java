@@ -1,7 +1,7 @@
 package com.zerobase.gamecollectors.service;
 
 import com.zerobase.gamecollectors.client.mailgun.MailgunClient;
-import com.zerobase.gamecollectors.dto.SendEmailServiceDto;
+import com.zerobase.gamecollectors.model.SendEmailServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
