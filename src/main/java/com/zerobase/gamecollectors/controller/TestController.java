@@ -1,6 +1,6 @@
 package com.zerobase.gamecollectors.controller;
 
-import com.zerobase.gamecollectors.form.SendEmailForm;
+import com.zerobase.gamecollectors.model.SendEmailRequestDto;
 import com.zerobase.gamecollectors.service.SendEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,8 @@ public class TestController {
     private final SendEmailService sendEmailService;
 
     @PostMapping
-    public ResponseEntity<String> sendEmail(@RequestBody SendEmailForm form) {
-        return ResponseEntity.ok(sendEmailService.sendEmail(form).getBody());
+    public ResponseEntity<String> sendEmail(@RequestBody SendEmailRequestDto requestDto) {
+
+        return ResponseEntity.ok(sendEmailService.sendEmail(requestDto.toServiceDto()).getBody());
     }
 }

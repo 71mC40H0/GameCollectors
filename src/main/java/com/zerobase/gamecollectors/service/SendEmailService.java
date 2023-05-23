@@ -1,7 +1,7 @@
 package com.zerobase.gamecollectors.service;
 
 import com.zerobase.gamecollectors.client.mailgun.MailgunClient;
-import com.zerobase.gamecollectors.form.SendEmailForm;
+import com.zerobase.gamecollectors.model.SendEmailServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ public class SendEmailService {
 
     private final MailgunClient mailgunClient;
 
-    public ResponseEntity<String> sendEmail(SendEmailForm form) {
-        return mailgunClient.sendEmail(form);
+    public ResponseEntity<String> sendEmail(SendEmailServiceDto serviceDto) {
+        return mailgunClient.sendEmail(serviceDto);
     }
 }
