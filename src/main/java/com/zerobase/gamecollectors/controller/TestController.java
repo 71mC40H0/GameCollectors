@@ -19,6 +19,6 @@ public class TestController {
     @PostMapping
     public ResponseEntity<String> sendEmail(@RequestBody SendEmailRequestDto requestDto) {
 
-        return ResponseEntity.ok(sendEmailService.sendEmail(requestDto.toServiceDto()).getBody());
+        return sendEmailService.sendEmail(requestDto.toServiceDto());
     }
 }
