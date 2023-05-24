@@ -20,13 +20,19 @@ import org.springframework.stereotype.Service;
 public class ManagerSignUpService {
 
     private final ManagerRepository managerRepository;
-    private final RedisUtil redisUtil;
     private final MailgunClient mailgunClient;
     private final PasswordEncoder passwordEncoder;
 
     @Value(value = "${mailgun.api.emailSender}")
     private String emailSender;
 
+    @Value(value = "${gamecollectors.host}")
+    private String host;
+
+    @Value(value = "${server.port}")
+    private String port;
+
+    @Transactional
     public void signUp(ManagerSignUpServiceDto dto) {
         if (managerRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REGISTERED_USER);
@@ -54,14 +60,14 @@ public class ManagerSignUpService {
 
         if (manager.isEmailAuth()) {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
-        } else if (!redisUtil.existData(email)) {
+        } else if (!RedisUtil.existData(email)) {
             throw new CustomException(ErrorCode.NEED_NEW_VERIFICATION_CODE);
-        } else if (!code.equals(redisUtil.getData(email))) {
+        } else if (!code.equals(RedisUtil.getData(email))) {
             throw new CustomException(ErrorCode.WRONG_VERIFICATION);
         }
 
         manager.setEmailAuth(true);
-        redisUtil.deleteData(manager.getEmail());
+        RedisUtil.deleteData(manager.getEmail());
     }
 
     public void reissueVerificationCode(Long id) {
@@ -88,13 +94,17 @@ public class ManagerSignUpService {
     }
 
     private void setVerificationCode(String email, String code) {
-        redisUtil.setDataExpire(email, code, 1000L * 60 * 5);
+        RedisUtil.setDataExpireSec(email, code, 60 * 5L);
     }
 
     private String getEmailVerificationLink(String email, String code) {
         StringBuilder builder = new StringBuilder();
         return builder.append("Hello Manager! Please Click Link for verification\n\n")
-            .append("http://localhost:8080/signUp/manager/verify?email=")
+            .append("http://")
+            .append(host)
+            .append(":")
+            .append(port)
+            .append("/sign-up/manager/verify?email=")
             .append(email)
             .append("&code=")
             .append(code).toString();
