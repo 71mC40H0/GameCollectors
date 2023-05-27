@@ -1,5 +1,6 @@
 package com.zerobase.gamecollectors.service;
 
+import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.common.UserType;
 import com.zerobase.gamecollectors.common.UserVo;
 import com.zerobase.gamecollectors.config.JwtAuthenticationProvider;
@@ -9,7 +10,6 @@ import com.zerobase.gamecollectors.exception.CustomException;
 import com.zerobase.gamecollectors.exception.ErrorCode;
 import com.zerobase.gamecollectors.model.SignInServiceDto;
 import com.zerobase.gamecollectors.model.TokenDto;
-import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.redis.RedisUtil;
 import java.util.Date;
 import javax.transaction.Transactional;
@@ -83,7 +83,7 @@ public class ManagerSignInOutService {
         Date now = new Date();
         RedisUtil.setBlacklist(BLACKLIST_PREFIX + accessToken, "blacklist access token",
             provider.getExpiration(accessToken) - now.getTime());
-        RedisUtil.deleteData(REFRESH_TOKEN_PREFIX + userVo.getEmail());
-        log.info("Sign Out Manager -> id: {}", userVo.getId());
+        RedisUtil.deleteData(REFRESH_TOKEN_PREFIX + m.getEmail());
+        log.info("Sign Out Manager -> id: {}", m.getId());
     }
 }

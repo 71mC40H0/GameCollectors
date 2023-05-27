@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.zerobase.gamecollectors.model.SendEmailServiceDto;
 import java.util.Objects;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,7 @@ class SendEmailServiceTest {
     private String mailgunApiDomain;
 
     @Test
+    @DisplayName("Mailgun 이메일 전송")
     void sendEmailTest() {
         //given
         SendEmailServiceDto serviceDto = SendEmailServiceDto.builder()

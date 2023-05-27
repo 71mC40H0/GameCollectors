@@ -26,11 +26,13 @@ public class ManagerSignUpService {
     @Value(value = "${mailgun.api.emailSender}")
     private String emailSender;
 
-    @Value(value = "${gamecollectors.host}")
+    @Value(value = "${server.host}")
     private String host;
 
     @Value(value = "${server.port}")
     private String port;
+
+    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "evcode:";
 
     @Transactional
     public void signUp(ManagerSignUpServiceDto dto) {
@@ -58,16 +60,18 @@ public class ManagerSignUpService {
         Manager manager = managerRepository.findByEmail(email)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_USER));
 
+        String redisKey = EMAIL_VERIFICATION_CODE_PREFIX + email;
+
         if (manager.isEmailAuth()) {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
-        } else if (!RedisUtil.existData(email)) {
+        } else if (!RedisUtil.existData(redisKey)) {
             throw new CustomException(ErrorCode.NEED_NEW_VERIFICATION_CODE);
-        } else if (!code.equals(RedisUtil.getData(email))) {
+        } else if (!code.equals(RedisUtil.getData(redisKey))) {
             throw new CustomException(ErrorCode.WRONG_VERIFICATION);
         }
 
         manager.setEmailAuth(true);
-        RedisUtil.deleteData(manager.getEmail());
+        RedisUtil.deleteData(redisKey);
     }
 
     public void reissueVerificationCode(Long id) {
@@ -94,7 +98,7 @@ public class ManagerSignUpService {
     }
 
     private void setVerificationCode(String email, String code) {
-        RedisUtil.setDataExpireSec(email, code, 60 * 5L);
+        RedisUtil.setDataExpireSec(EMAIL_VERIFICATION_CODE_PREFIX + email, code, 60 * 5L);
     }
 
     private String getEmailVerificationLink(String email, String code) {
