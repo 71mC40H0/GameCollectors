@@ -43,7 +43,7 @@ public class ManagerSignUpService {
         dto.setPassword(this.passwordEncoder.encode(dto.getPassword()));
         managerRepository.save(dto.toEntity());
 
-        String code = getVerificationCode(dto.getEmail());
+        String code = getVerificationCode();
         setVerificationCode(dto.getEmail(), code);
 
         mailgunClient.sendEmail(SendEmailServiceDto.builder()
@@ -82,7 +82,7 @@ public class ManagerSignUpService {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
         }
 
-        String code = getVerificationCode(manager.getEmail());
+        String code = getVerificationCode();
         setVerificationCode(manager.getEmail(), code);
 
         mailgunClient.sendEmail(SendEmailServiceDto.builder()
@@ -93,7 +93,7 @@ public class ManagerSignUpService {
             .build());
     }
 
-    private String getVerificationCode(String email) {
+    private String getVerificationCode() {
         return RandomCodeGenerator.generateRandomCode(10, true, true, true);
     }
 

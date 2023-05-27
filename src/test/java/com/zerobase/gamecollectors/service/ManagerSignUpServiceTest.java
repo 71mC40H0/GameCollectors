@@ -81,6 +81,7 @@ class ManagerSignUpServiceTest {
             verify(mailgunClient).sendEmail(sendEmailServiceDtoArgumentCaptor.capture());
             assertEquals("abc@example.com", managerArgumentCaptor.getValue().getEmail());
             assertEquals(passwordEncoder.encode("123"), managerArgumentCaptor.getValue().getPassword());
+            redisUtilMockedStatic.verify(() -> RedisUtil.setDataExpireSec(anyString(), anyString(), anyLong()));
             assertFalse(managerArgumentCaptor.getValue().isEmailAuth());
         }
     }
@@ -261,7 +262,6 @@ class ManagerSignUpServiceTest {
     @DisplayName("인증 코드 재발급 성공")
     void testReissueVerificationCodeSuccess() {
         //given
-        Long id = 1L;
         Manager manager = Manager.builder()
             .id(1L)
             .email("abc@test.com")
