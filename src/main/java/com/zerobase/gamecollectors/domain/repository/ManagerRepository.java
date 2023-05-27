@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface ManagerRepository extends JpaRepository<Manager, Long> {
 
     Optional<Manager> findByEmail(String email);
+
+    Optional<Manager> findByIdAndEmail(Long id, String email);
 }

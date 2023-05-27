@@ -23,8 +23,24 @@ public class RedisUtil {
         valueOperations.set(key, value, expireDuration);
     }
 
+    public static void setDataExpireMilliSec(String key, String value, long duration) {
+        ValueOperations<String, String> valueOperations = template.opsForValue();
+        Duration expireDuration = Duration.ofMillis(duration);
+        valueOperations.set(key, value, expireDuration);
+    }
+
     public static void deleteData(String key) {
         template.delete(key);
+    }
+
+    public static void setBlacklist(String key, String value, long duration) {
+        ValueOperations<String, String> valueOperations = template.opsForValue();
+        Duration expireDuration = Duration.ofMillis(duration);
+        valueOperations.set(key, value, expireDuration);
+    }
+
+    public static boolean isBlackList(String key) {
+        return Boolean.TRUE.equals(template.hasKey(key));
     }
 
     public static void setTemplate(StringRedisTemplate template) {
