@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -18,13 +21,16 @@ import com.zerobase.gamecollectors.model.ManagerSignUpServiceDto;
 import com.zerobase.gamecollectors.model.SendEmailServiceDto;
 import com.zerobase.gamecollectors.redis.RedisUtil;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,8 +49,12 @@ class ManagerSignUpServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private RedisUtil redisUtil;
+    private StringRedisTemplate stringRedisTemplate;
 
+    @BeforeEach
+    void setUp() {
+        RedisUtil.setTemplate(stringRedisTemplate);
+    }
 
     @Test
     @DisplayName("회원 가입 성공")
@@ -56,20 +66,24 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findByEmail(serviceDto.getEmail())).willReturn(Optional.empty());
-        ArgumentCaptor<Manager> managerArgumentCaptor = ArgumentCaptor.forClass(Manager.class);
-        ArgumentCaptor<SendEmailServiceDto> sendEmailServiceDtoArgumentCaptor = ArgumentCaptor.forClass(
-            SendEmailServiceDto.class);
+        try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
+            given(managerRepository.findByEmail(anyString())).willReturn(Optional.empty());
 
-        //when
-        managerSignUpService.signUp(serviceDto);
+            ArgumentCaptor<Manager> managerArgumentCaptor = ArgumentCaptor.forClass(Manager.class);
+            ArgumentCaptor<SendEmailServiceDto> sendEmailServiceDtoArgumentCaptor = ArgumentCaptor.forClass(
+                SendEmailServiceDto.class);
 
-        //then
-        verify(managerRepository).save(managerArgumentCaptor.capture());
-        verify(mailgunClient).sendEmail(sendEmailServiceDtoArgumentCaptor.capture());
-        assertEquals("abc@example.com", managerArgumentCaptor.getValue().getEmail());
-        assertEquals(passwordEncoder.encode("123"), managerArgumentCaptor.getValue().getPassword());
-        assertFalse(managerArgumentCaptor.getValue().isEmailAuth());
+            //when
+            managerSignUpService.signUp(serviceDto);
+
+            //then
+            verify(managerRepository).save(managerArgumentCaptor.capture());
+            verify(mailgunClient).sendEmail(sendEmailServiceDtoArgumentCaptor.capture());
+            assertEquals("abc@example.com", managerArgumentCaptor.getValue().getEmail());
+            assertEquals(passwordEncoder.encode("123"), managerArgumentCaptor.getValue().getPassword());
+            redisUtilMockedStatic.verify(() -> RedisUtil.setDataExpireSec(anyString(), anyString(), anyLong()));
+            assertFalse(managerArgumentCaptor.getValue().isEmailAuth());
+        }
     }
 
     @Test
@@ -82,7 +96,7 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findByEmail(serviceDto.getEmail())).willReturn(
+        given(managerRepository.findByEmail(anyString())).willReturn(
             Optional.of(Manager.builder()
                 .id(1L)
                 .email("abc@example.com")
@@ -113,18 +127,20 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findByEmail(email)).willReturn(Optional.of(manager));
-        given(redisUtil.existData(email)).willReturn(true);
-        given(redisUtil.getData(email)).willReturn(code);
+        try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
+            given(managerRepository.findByEmail(anyString())).willReturn(Optional.of(manager));
+            given(RedisUtil.existData(anyString())).willReturn(true);
+            given(RedisUtil.getData(anyString())).willReturn(code);
 
-        //when
-        managerSignUpService.verifyEmail(email, code);
+            //when
+            managerSignUpService.verifyEmail(email, code);
 
-        //then
-        verify(managerRepository).findByEmail(email);
-        verify(redisUtil).existData(email);
-        verify(redisUtil).getData(email);
-        assertTrue(manager.isEmailAuth());
+            //then
+            verify(managerRepository).findByEmail(anyString());
+            redisUtilMockedStatic.verify(() -> RedisUtil.existData(anyString()));
+            redisUtilMockedStatic.verify(() -> RedisUtil.getData(anyString()));
+            assertTrue(manager.isEmailAuth());
+        }
     }
 
     @Test
@@ -141,16 +157,14 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findByEmail(email)).willReturn(Optional.empty());
+        given(managerRepository.findByEmail(anyString())).willReturn(Optional.empty());
 
         //then
         CustomException exception = assertThrows(CustomException.class,
             () -> managerSignUpService.verifyEmail(email, code));
 
         //then
-        verify(managerRepository).findByEmail(email);
-        verify(redisUtil, never()).existData(email);
-        verify(redisUtil, never()).getData(email);
+        verify(managerRepository).findByEmail(anyString());
         assertEquals(ErrorCode.NOT_FOUND_USER, exception.getErrorCode());
         assertFalse(manager.isEmailAuth());
     }
@@ -169,16 +183,14 @@ class ManagerSignUpServiceTest {
             .emailAuth(true)
             .build();
 
-        given(managerRepository.findByEmail(email)).willReturn(Optional.of(manager));
+        given(managerRepository.findByEmail(anyString())).willReturn(Optional.of(manager));
 
         //then
         CustomException exception = assertThrows(CustomException.class,
             () -> managerSignUpService.verifyEmail(email, code));
 
         //then
-        verify(managerRepository).findByEmail(email);
-        verify(redisUtil, never()).existData(email);
-        verify(redisUtil, never()).getData(email);
+        verify(managerRepository).findByEmail(anyString());
         assertEquals(ErrorCode.ALREADY_VERIFIED, exception.getErrorCode());
         assertTrue(manager.isEmailAuth());
     }
@@ -197,19 +209,21 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findByEmail(email)).willReturn(Optional.of(manager));
-        given(redisUtil.existData(email)).willReturn(false);
+        try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
+            given(managerRepository.findByEmail(anyString())).willReturn(Optional.of(manager));
+            given(RedisUtil.existData(anyString())).willReturn(false);
 
-        //then
-        CustomException exception = assertThrows(CustomException.class,
-            () -> managerSignUpService.verifyEmail(email, code));
+            //then
+            CustomException exception = assertThrows(CustomException.class,
+                () -> managerSignUpService.verifyEmail(email, code));
 
-        //then
-        verify(managerRepository).findByEmail(email);
-        verify(redisUtil).existData(email);
-        verify(redisUtil, never()).getData(email);
-        assertEquals(ErrorCode.NEED_NEW_VERIFICATION_CODE, exception.getErrorCode());
-        assertFalse(manager.isEmailAuth());
+            //then
+            verify(managerRepository).findByEmail(anyString());
+            assertEquals(ErrorCode.NEED_NEW_VERIFICATION_CODE, exception.getErrorCode());
+            assertFalse(manager.isEmailAuth());
+            redisUtilMockedStatic.verify(() -> RedisUtil.existData(anyString()));
+            redisUtilMockedStatic.verify(() -> RedisUtil.getData(anyString()), never());
+        }
     }
 
     @Test
@@ -226,27 +240,28 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findByEmail(email)).willReturn(Optional.of(manager));
-        given(redisUtil.existData(email)).willReturn(true);
-        given(redisUtil.getData(email)).willReturn("zxc123asdQ456");
+        try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
+            given(managerRepository.findByEmail(anyString())).willReturn(Optional.of(manager));
+            given(RedisUtil.existData(anyString())).willReturn(true);
+            given(RedisUtil.getData(anyString())).willReturn("zxc123asdQ456");
 
-        //then
-        CustomException exception = assertThrows(CustomException.class,
-            () -> managerSignUpService.verifyEmail(email, code));
+            //then
+            CustomException exception = assertThrows(CustomException.class,
+                () -> managerSignUpService.verifyEmail(email, code));
 
-        //then
-        verify(managerRepository).findByEmail(email);
-        verify(redisUtil).existData(email);
-        verify(redisUtil).getData(email);
-        assertEquals(ErrorCode.WRONG_VERIFICATION, exception.getErrorCode());
-        assertFalse(manager.isEmailAuth());
+            //then
+            verify(managerRepository).findByEmail(anyString());
+            assertEquals(ErrorCode.WRONG_VERIFICATION, exception.getErrorCode());
+            assertFalse(manager.isEmailAuth());
+            redisUtilMockedStatic.verify(() -> RedisUtil.existData(anyString()));
+            redisUtilMockedStatic.verify(() -> RedisUtil.getData(anyString()));
+        }
     }
 
     @Test
     @DisplayName("인증 코드 재발급 성공")
     void testReissueVerificationCodeSuccess() {
         //given
-        Long id = 1L;
         Manager manager = Manager.builder()
             .id(1L)
             .email("abc@test.com")
@@ -254,15 +269,18 @@ class ManagerSignUpServiceTest {
             .emailAuth(false)
             .build();
 
-        given(managerRepository.findById(id)).willReturn(Optional.of(manager));
-        ArgumentCaptor<SendEmailServiceDto> captor = ArgumentCaptor.forClass(SendEmailServiceDto.class);
+        try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
+            given(managerRepository.findById(anyLong())).willReturn(Optional.of(manager));
+            ArgumentCaptor<SendEmailServiceDto> captor = ArgumentCaptor.forClass(SendEmailServiceDto.class);
 
-        //when
-        managerSignUpService.reissueVerificationCode(id);
+            //when
+            managerSignUpService.reissueVerificationCode(anyLong());
 
-        //then
-        verify(managerRepository).findById(id);
-        verify(mailgunClient).sendEmail(captor.capture());
+            //then
+            verify(managerRepository).findById(anyLong());
+            verify(mailgunClient).sendEmail(captor.capture());
+            redisUtilMockedStatic.verify(() -> RedisUtil.setDataExpireSec(anyString(), anyString(), anyLong()));
+        }
     }
 
     @Test
@@ -271,14 +289,14 @@ class ManagerSignUpServiceTest {
         //given
         Long id = 1L;
 
-        given(managerRepository.findById(id)).willReturn(Optional.empty());
+        given(managerRepository.findById(anyLong())).willReturn(Optional.empty());
 
         //when
         CustomException exception = assertThrows(CustomException.class,
             () -> managerSignUpService.reissueVerificationCode(id));
 
         //then
-        verify(managerRepository).findById(id);
+        verify(managerRepository).findById(anyLong());
         verify(mailgunClient, never()).sendEmail(any(SendEmailServiceDto.class));
         assertEquals(ErrorCode.NOT_FOUND_USER, exception.getErrorCode());
     }
@@ -295,14 +313,14 @@ class ManagerSignUpServiceTest {
             .emailAuth(true)
             .build();
 
-        given(managerRepository.findById(id)).willReturn(Optional.of(manager));
+        given(managerRepository.findById(anyLong())).willReturn(Optional.of(manager));
 
         //when
         CustomException exception = assertThrows(CustomException.class,
             () -> managerSignUpService.reissueVerificationCode(id));
 
         //then
-        verify(managerRepository).findById(id);
+        verify(managerRepository).findById(anyLong());
         verify(mailgunClient, never()).sendEmail(any(SendEmailServiceDto.class));
         assertEquals(ErrorCode.ALREADY_VERIFIED, exception.getErrorCode());
         assertTrue(manager.isEmailAuth());

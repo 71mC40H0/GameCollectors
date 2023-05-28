@@ -20,13 +20,21 @@ import org.springframework.stereotype.Service;
 public class ManagerSignUpService {
 
     private final ManagerRepository managerRepository;
-    private final RedisUtil redisUtil;
     private final MailgunClient mailgunClient;
     private final PasswordEncoder passwordEncoder;
 
     @Value(value = "${mailgun.api.emailSender}")
     private String emailSender;
 
+    @Value(value = "${server.host}")
+    private String host;
+
+    @Value(value = "${server.port}")
+    private String port;
+
+    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "evcode:";
+
+    @Transactional
     public void signUp(ManagerSignUpServiceDto dto) {
         if (managerRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REGISTERED_USER);
@@ -35,7 +43,7 @@ public class ManagerSignUpService {
         dto.setPassword(this.passwordEncoder.encode(dto.getPassword()));
         managerRepository.save(dto.toEntity());
 
-        String code = getVerificationCode(dto.getEmail());
+        String code = getVerificationCode();
         setVerificationCode(dto.getEmail(), code);
 
         mailgunClient.sendEmail(SendEmailServiceDto.builder()
@@ -52,16 +60,18 @@ public class ManagerSignUpService {
         Manager manager = managerRepository.findByEmail(email)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_USER));
 
+        String redisKey = EMAIL_VERIFICATION_CODE_PREFIX + email;
+
         if (manager.isEmailAuth()) {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
-        } else if (!redisUtil.existData(email)) {
+        } else if (!RedisUtil.existData(redisKey)) {
             throw new CustomException(ErrorCode.NEED_NEW_VERIFICATION_CODE);
-        } else if (!code.equals(redisUtil.getData(email))) {
+        } else if (!code.equals(RedisUtil.getData(redisKey))) {
             throw new CustomException(ErrorCode.WRONG_VERIFICATION);
         }
 
         manager.setEmailAuth(true);
-        redisUtil.deleteData(manager.getEmail());
+        RedisUtil.deleteData(redisKey);
     }
 
     public void reissueVerificationCode(Long id) {
@@ -72,7 +82,7 @@ public class ManagerSignUpService {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
         }
 
-        String code = getVerificationCode(manager.getEmail());
+        String code = getVerificationCode();
         setVerificationCode(manager.getEmail(), code);
 
         mailgunClient.sendEmail(SendEmailServiceDto.builder()
@@ -83,18 +93,22 @@ public class ManagerSignUpService {
             .build());
     }
 
-    private String getVerificationCode(String email) {
+    private String getVerificationCode() {
         return RandomCodeGenerator.generateRandomCode(10, true, true, true);
     }
 
     private void setVerificationCode(String email, String code) {
-        redisUtil.setDataExpire(email, code, 1000L * 60 * 5);
+        RedisUtil.setDataExpireSec(EMAIL_VERIFICATION_CODE_PREFIX + email, code, 60 * 5L);
     }
 
     private String getEmailVerificationLink(String email, String code) {
         StringBuilder builder = new StringBuilder();
         return builder.append("Hello Manager! Please Click Link for verification\n\n")
-            .append("http://localhost:8080/signUp/manager/verify?email=")
+            .append("http://")
+            .append(host)
+            .append(":")
+            .append(port)
+            .append("/sign-up/manager/verify?email=")
             .append(email)
             .append("&code=")
             .append(code).toString();
