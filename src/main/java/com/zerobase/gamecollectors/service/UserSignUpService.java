@@ -1,25 +1,33 @@
 package com.zerobase.gamecollectors.service;
 
 import com.zerobase.gamecollectors.client.mailgun.MailgunClient;
-import com.zerobase.gamecollectors.domain.entity.Manager;
-import com.zerobase.gamecollectors.domain.repository.ManagerRepository;
+import com.zerobase.gamecollectors.domain.entity.Deposit;
+import com.zerobase.gamecollectors.domain.entity.Point;
+import com.zerobase.gamecollectors.domain.entity.User;
+import com.zerobase.gamecollectors.domain.repository.DepositRepository;
+import com.zerobase.gamecollectors.domain.repository.PointRepository;
+import com.zerobase.gamecollectors.domain.repository.UserRepository;
 import com.zerobase.gamecollectors.exception.CustomException;
 import com.zerobase.gamecollectors.exception.ErrorCode;
-import com.zerobase.gamecollectors.model.ManagerSignUpServiceDto;
 import com.zerobase.gamecollectors.model.SendEmailServiceDto;
+import com.zerobase.gamecollectors.model.UserSignUpServiceDto;
 import com.zerobase.gamecollectors.redis.RedisUtil;
 import com.zerobase.gamecollectors.util.RandomCodeGenerator;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class ManagerSignUpService {
+public class UserSignUpService {
 
-    private final ManagerRepository managerRepository;
+    private final UserRepository userRepository;
+    private final DepositRepository depositRepository;
+    private final PointRepository pointRepository;
     private final MailgunClient mailgunClient;
     private final PasswordEncoder passwordEncoder;
 
@@ -32,16 +40,22 @@ public class ManagerSignUpService {
     @Value(value = "${server.port}")
     private String port;
 
-    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "mevcode:";
+    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "uevcode:";
 
     @Transactional
-    public void signUp(ManagerSignUpServiceDto dto) {
-        if (managerRepository.findByEmail(dto.getEmail()).isPresent()) {
+    public void signUp(UserSignUpServiceDto dto) {
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REGISTERED_USER);
         }
 
         dto.setPassword(this.passwordEncoder.encode(dto.getPassword()));
-        managerRepository.save(dto.toEntity());
+        userRepository.save(dto.toEntity());
+
+        User user = userRepository.findByEmail(dto.getEmail())
+            .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_USER));
+
+        createDeposit(user);
+        createPoint(user);
 
         String code = getVerificationCode();
         setVerificationCode(dto.getEmail(), code);
@@ -50,20 +64,19 @@ public class ManagerSignUpService {
             .from(emailSender)
             .to(dto.getEmail())
             .subject("Verification Email!")
-            .text(getEmailVerificationLink(dto.getEmail(), code))
+            .text(getEmailVerificationLink(dto.getEmail(), dto.getNickname(), code))
             .build());
     }
-
 
     @Transactional
     public void verifyEmail(String email, String code) {
 
-        Manager manager = managerRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_USER));
 
         String redisKey = EMAIL_VERIFICATION_CODE_PREFIX + email;
 
-        if (manager.isEmailAuth()) {
+        if (user.isEmailAuth()) {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
         } else if (!RedisUtil.existData(redisKey)) {
             throw new CustomException(ErrorCode.NEED_NEW_VERIFICATION_CODE);
@@ -71,26 +84,26 @@ public class ManagerSignUpService {
             throw new CustomException(ErrorCode.WRONG_VERIFICATION);
         }
 
-        manager.setEmailAuth(true);
+        user.setEmailAuth(true);
         RedisUtil.deleteData(redisKey);
     }
 
     public void reissueVerificationCode(Long id) {
-        Manager manager = managerRepository.findById(id)
+        User user = userRepository.findById(id)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_USER));
 
-        if (manager.isEmailAuth()) {
+        if (user.isEmailAuth()) {
             throw new CustomException(ErrorCode.ALREADY_VERIFIED);
         }
 
         String code = getVerificationCode();
-        setVerificationCode(manager.getEmail(), code);
+        setVerificationCode(user.getEmail(), code);
 
         mailgunClient.sendEmail(SendEmailServiceDto.builder()
             .from(emailSender)
-            .to(manager.getEmail())
+            .to(user.getEmail())
             .subject("Verification Email!")
-            .text(getEmailVerificationLink(manager.getEmail(), code))
+            .text(getEmailVerificationLink(user.getEmail(), user.getNickname(), code))
             .build());
     }
 
@@ -102,16 +115,50 @@ public class ManagerSignUpService {
         RedisUtil.setDataExpireSec(EMAIL_VERIFICATION_CODE_PREFIX + email, code, 60 * 5L);
     }
 
-    private String getEmailVerificationLink(String email, String code) {
+    private String getEmailVerificationLink(String email, String nickname, String code) {
         StringBuilder builder = new StringBuilder();
-        return builder.append("Hello Manager! Please Click Link for verification\n\n")
+        return builder.append("Hello ")
+            .append(nickname)
+            .append("! Please Click Link for verification\n\n")
             .append("http://")
             .append(host)
             .append(":")
             .append(port)
-            .append("/sign-up/manager/verify?email=")
+            .append("/sign-up/user/verify?email=")
             .append(email)
             .append("&code=")
             .append(code).toString();
+    }
+
+    @Transactional
+    private void createDeposit(User user) {
+        if (depositRepository.findByUserId(user.getId()).isPresent()) {
+            log.warn("INVALID DEPOSIT -> user id : {}", user.getId());
+            throw new CustomException(ErrorCode.INVALID_DEPOSIT);
+        }
+
+        Deposit deposit = Deposit.builder()
+            .user(user)
+            .deposit(0)
+            .build();
+
+        user.setDeposit(deposit);
+        depositRepository.save(deposit);
+    }
+
+    @Transactional
+    private void createPoint(User user) {
+        if (pointRepository.findByUserId(user.getId()).isPresent()) {
+            log.warn("INVALID POINT -> user id : {}", user.getId());
+            throw new CustomException(ErrorCode.INVALID_POINT);
+        }
+
+        Point point = Point.builder()
+            .user(user)
+            .point(0)
+            .build();
+
+        user.setPoint(point);
+        pointRepository.save(point);
     }
 }

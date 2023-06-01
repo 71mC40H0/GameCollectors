@@ -16,7 +16,10 @@ public enum ErrorCode {
 
     MISMATCHED_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 틀립니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Refresh Token입니다."),
-    INVALID_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Access Token입니다.");
+    INVALID_ACCESS_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않은 Access Token입니다."),
+
+    INVALID_DEPOSIT(HttpStatus.CONFLICT, "해당 사용자의 예치금이 이미 존재합니다. 관리자에게 문의 하세요."),
+    INVALID_POINT(HttpStatus.CONFLICT, "해당 사용자의 적립금이 이미 존재합니다. 관리자에게 문의 하세요.");
 
     private final HttpStatus httpStatus;
     private final String message;
