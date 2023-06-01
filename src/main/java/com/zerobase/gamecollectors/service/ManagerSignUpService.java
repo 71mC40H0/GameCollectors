@@ -32,7 +32,7 @@ public class ManagerSignUpService {
     @Value(value = "${server.port}")
     private String port;
 
-    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "evcode:";
+    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "mevcode:";
 
     @Transactional
     public void signUp(ManagerSignUpServiceDto dto) {
@@ -53,6 +53,7 @@ public class ManagerSignUpService {
             .text(getEmailVerificationLink(dto.getEmail(), code))
             .build());
     }
+
 
     @Transactional
     public void verifyEmail(String email, String code) {

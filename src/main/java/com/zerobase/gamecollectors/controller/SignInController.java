@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiParam;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -29,7 +30,7 @@ public class SignInController {
     }
 
     @ApiOperation(value = "관리자 Token 재발급")
-    @PostMapping("/manager/reissue")
+    @GetMapping("/manager/reissue")
     public ResponseEntity<TokenDto> reissueManagerToken(
         @RequestHeader(name = "X-AUTH-TOKEN") String refreshToken) {
         return ResponseEntity.ok(managerSignInOutService.reissue(refreshToken));
