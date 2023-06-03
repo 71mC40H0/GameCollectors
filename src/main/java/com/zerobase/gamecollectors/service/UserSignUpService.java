@@ -40,7 +40,7 @@ public class UserSignUpService {
     @Value(value = "${server.port}")
     private String port;
 
-    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "uevcode:";
+    private static final String EMAIL_VERIFICATION_CODE_PREFIX = "u_evcode:";
 
     @Transactional
     public void signUp(UserSignUpServiceDto dto) {
