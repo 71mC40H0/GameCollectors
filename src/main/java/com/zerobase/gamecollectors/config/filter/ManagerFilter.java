@@ -1,8 +1,9 @@
 package com.zerobase.gamecollectors.config.filter;
 
+import com.zerobase.gamecollectors.common.TokenType;
+import com.zerobase.gamecollectors.common.UserType;
 import com.zerobase.gamecollectors.common.UserVo;
 import com.zerobase.gamecollectors.config.JwtAuthenticationProvider;
-import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.service.ManagerDetailService;
 import java.io.IOException;
 import javax.servlet.Filter;
@@ -26,7 +27,7 @@ public class ManagerFilter implements Filter {
         throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         String token = req.getHeader("X-AUTH-TOKEN");
-        if (provider.validateToken(token).equals(TokenType.INVALID_TOKEN)) {
+        if (provider.validateToken(token, UserType.MANAGER).equals(TokenType.INVALID_TOKEN)) {
             throw new ServletException("Invalid Token");
         }
         UserVo vo = provider.getUserVo(token);

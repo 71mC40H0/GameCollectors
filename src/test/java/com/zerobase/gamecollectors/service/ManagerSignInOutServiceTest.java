@@ -10,6 +10,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.zerobase.gamecollectors.common.TokenType;
+import com.zerobase.gamecollectors.common.UserType;
 import com.zerobase.gamecollectors.common.UserVo;
 import com.zerobase.gamecollectors.config.JwtAuthenticationProvider;
 import com.zerobase.gamecollectors.domain.entity.Manager;
@@ -18,7 +20,6 @@ import com.zerobase.gamecollectors.exception.CustomException;
 import com.zerobase.gamecollectors.exception.ErrorCode;
 import com.zerobase.gamecollectors.model.SignInServiceDto;
 import com.zerobase.gamecollectors.model.TokenDto;
-import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.redis.RedisUtil;
 import java.util.Date;
 import java.util.Optional;
@@ -149,7 +150,7 @@ class ManagerSignInOutServiceTest {
         Date now = new Date();
 
         try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
-            given(provider.validateToken(anyString())).willReturn(TokenType.REFRESH_TOKEN);
+            given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.REFRESH_TOKEN);
             given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
             given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(
                 Optional.of(Manager.builder()
@@ -167,7 +168,7 @@ class ManagerSignInOutServiceTest {
             TokenDto tokenDto = managerSignInOutService.reissue("Refresh_Token");
 
             //then
-            verify(provider).validateToken(anyString());
+            verify(provider).validateToken(anyString(), any(UserType.class));
             verify(provider).getUserVo(anyString());
             verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
             verify(provider).createAccessToken(anyString(), anyLong(), any());
@@ -186,7 +187,7 @@ class ManagerSignInOutServiceTest {
         Date now = new Date();
 
         try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
-            given(provider.validateToken(anyString())).willReturn(TokenType.REFRESH_TOKEN);
+            given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.REFRESH_TOKEN);
             given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
             given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(
                 Optional.of(Manager.builder()
@@ -205,7 +206,7 @@ class ManagerSignInOutServiceTest {
             TokenDto tokenDto = managerSignInOutService.reissue("Refresh_Token");
 
             //then
-            verify(provider).validateToken(anyString());
+            verify(provider).validateToken(anyString(), any(UserType.class));
             verify(provider).getUserVo(anyString());
             verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
             verify(provider).createAccessToken(anyString(), anyLong(), any());
@@ -221,14 +222,14 @@ class ManagerSignInOutServiceTest {
     @DisplayName("토큰 재발급 실패 - 유효하지 않은 Refresh Token")
     void testReissueFail_RenewRefreshToken() {
         //given
-        given(provider.validateToken(anyString())).willReturn(TokenType.INVALID_TOKEN);
+        given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.INVALID_TOKEN);
 
         //when
         CustomException exception = assertThrows(CustomException.class,
             () -> managerSignInOutService.reissue("Invalid_Token"));
 
         //then
-        verify(provider).validateToken(anyString());
+        verify(provider).validateToken(anyString(), any(UserType.class));
         verify(provider, never()).getUserVo(anyString());
         verify(managerRepository, never()).findByIdAndEmail(anyLong(), anyString());
         verify(provider, never()).createAccessToken(anyString(), anyLong(), any());
@@ -240,7 +241,7 @@ class ManagerSignInOutServiceTest {
     @DisplayName("토큰 재발급 실패 - 일치하는 회원 없음")
     void testReissueFail_NotFoundUser() {
         //given
-        given(provider.validateToken(anyString())).willReturn(TokenType.REFRESH_TOKEN);
+        given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.REFRESH_TOKEN);
         given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
         given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(Optional.empty());
 
@@ -249,7 +250,7 @@ class ManagerSignInOutServiceTest {
             () -> managerSignInOutService.reissue("Refresh_Token"));
 
         //then
-        verify(provider).validateToken(anyString());
+        verify(provider).validateToken(anyString(), any(UserType.class));
         verify(provider).getUserVo(anyString());
         verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
         verify(provider, never()).createAccessToken(anyString(), anyLong(), any());
@@ -262,7 +263,7 @@ class ManagerSignInOutServiceTest {
     void testReissueFail_NotExistRefreshToken() {
         try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
             //given
-            given(provider.validateToken(anyString())).willReturn(TokenType.REFRESH_TOKEN);
+            given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.REFRESH_TOKEN);
             given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
             given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(
                 Optional.of(Manager.builder()
@@ -278,7 +279,7 @@ class ManagerSignInOutServiceTest {
                 () -> managerSignInOutService.reissue("Refresh_Token"));
 
             //then
-            verify(provider).validateToken(anyString());
+            verify(provider).validateToken(anyString(), any(UserType.class));
             verify(provider).getUserVo(anyString());
             verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
             verify(provider, never()).createAccessToken(anyString(), anyLong(), any());
@@ -294,7 +295,7 @@ class ManagerSignInOutServiceTest {
     void testReissueFail_MismatchRefreshToken() {
         try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
             //given
-            given(provider.validateToken(anyString())).willReturn(TokenType.REFRESH_TOKEN);
+            given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.REFRESH_TOKEN);
             given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
             given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(
                 Optional.of(Manager.builder()
@@ -311,7 +312,7 @@ class ManagerSignInOutServiceTest {
                 () -> managerSignInOutService.reissue("Invalid_Refresh_Token"));
 
             //then
-            verify(provider).validateToken(anyString());
+            verify(provider).validateToken(anyString(), any(UserType.class));
             verify(provider).getUserVo(anyString());
             verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
             verify(provider, never()).createAccessToken(anyString(), anyLong(), any());
@@ -327,7 +328,7 @@ class ManagerSignInOutServiceTest {
     void testSignOutSuccess() {
         try (MockedStatic<RedisUtil> redisUtilMockedStatic = mockStatic(RedisUtil.class)) {
             //given
-            given(provider.validateToken(anyString())).willReturn(TokenType.ACCESS_TOKEN);
+            given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.ACCESS_TOKEN);
             given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
             given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(
                 Optional.of(Manager.builder()
@@ -341,7 +342,7 @@ class ManagerSignInOutServiceTest {
             managerSignInOutService.signOut("Access_Token");
 
             //then
-            verify(provider).validateToken(anyString());
+            verify(provider).validateToken(anyString(), any(UserType.class));
             verify(provider).getUserVo(anyString());
             verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
             redisUtilMockedStatic.verify(() -> RedisUtil.setBlacklist(anyString(), anyString(), anyLong()));
@@ -353,14 +354,14 @@ class ManagerSignInOutServiceTest {
     @DisplayName("로그아웃 실패 - 유효하지 않은 Access Token")
     void testSignOutFail_InvalidAccessToken() {
         //given
-        given(provider.validateToken(anyString())).willReturn(TokenType.INVALID_TOKEN);
+        given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.INVALID_TOKEN);
 
         //when
         CustomException exception = assertThrows(CustomException.class,
             () -> managerSignInOutService.signOut("Invalid_Token"));
 
         //then
-        verify(provider).validateToken(anyString());
+        verify(provider).validateToken(anyString(), any(UserType.class));
         verify(provider, never()).getUserVo(anyString());
         verify(managerRepository, never()).findByIdAndEmail(anyLong(), anyString());
         assertEquals(ErrorCode.INVALID_ACCESS_TOKEN, exception.getErrorCode());
@@ -370,7 +371,7 @@ class ManagerSignInOutServiceTest {
     @DisplayName("로그아웃 실패 - 일치하는 회원 없음")
     void testSignOutFail_NotFoundUser() {
         //given
-        given(provider.validateToken(anyString())).willReturn(TokenType.ACCESS_TOKEN);
+        given(provider.validateToken(anyString(), any(UserType.class))).willReturn(TokenType.ACCESS_TOKEN);
         given(provider.getUserVo(anyString())).willReturn(new UserVo(1L, "abc@example.com"));
         given(managerRepository.findByIdAndEmail(anyLong(), anyString())).willReturn(Optional.empty());
 
@@ -379,7 +380,7 @@ class ManagerSignInOutServiceTest {
             () -> managerSignInOutService.signOut("Access_Token"));
 
         //then
-        verify(provider).validateToken(anyString());
+        verify(provider).validateToken(anyString(), any(UserType.class));
         verify(provider).getUserVo(anyString());
         verify(managerRepository).findByIdAndEmail(anyLong(), anyString());
         assertEquals(ErrorCode.NOT_FOUND_USER, exception.getErrorCode());

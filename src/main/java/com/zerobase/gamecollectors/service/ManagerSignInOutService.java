@@ -27,9 +27,9 @@ public class ManagerSignInOutService {
     private final JwtAuthenticationProvider provider;
     private final PasswordEncoder passwordEncoder;
 
-    public final static long REFRESH_EXPIRE_TIME = 1000L * 60 * 60 * 3; // 만료시간까지 3시간 미만인 경우 REFRESH TOKEN 갱신
-    private static final String REFRESH_TOKEN_PREFIX = "rtk:";
-    private static final String BLACKLIST_PREFIX = "blacklist:";
+    private static final long REFRESH_EXPIRE_TIME = 1000L * 60 * 60 * 3; // 만료시간까지 3시간 미만인 경우 REFRESH TOKEN 갱신
+    private static final String REFRESH_TOKEN_PREFIX = "m_rtk:";
+    private static final String BLACKLIST_PREFIX = "m_blacklist:";
 
     @Transactional
     public TokenDto signIn(SignInServiceDto serviceDto) {
@@ -48,7 +48,7 @@ public class ManagerSignInOutService {
 
     @Transactional
     public TokenDto reissue(String refreshToken) {
-        if (!provider.validateToken(refreshToken).equals(TokenType.REFRESH_TOKEN)) {
+        if (!provider.validateToken(refreshToken, UserType.MANAGER).equals(TokenType.REFRESH_TOKEN)) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
@@ -63,6 +63,7 @@ public class ManagerSignInOutService {
         }
 
         Date now = new Date();
+
         // refresh token 만료시간까지 3시간 미만 남은 경우 refresh token 재발급
         return TokenDto.builder()
             .accessToken(provider.createAccessToken(m.getEmail(), m.getId(), UserType.MANAGER))
@@ -73,7 +74,7 @@ public class ManagerSignInOutService {
 
     @Transactional
     public void signOut(String accessToken) {
-        if (!provider.validateToken(accessToken).equals(TokenType.ACCESS_TOKEN)) {
+        if (!provider.validateToken(accessToken, UserType.MANAGER).equals(TokenType.ACCESS_TOKEN)) {
             throw new CustomException(ErrorCode.INVALID_ACCESS_TOKEN);
         }
 
