@@ -1,8 +1,8 @@
 package com.zerobase.gamecollectors.config;
 
+import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.common.UserType;
 import com.zerobase.gamecollectors.common.UserVo;
-import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.redis.RedisUtil;
 import com.zerobase.gamecollectors.util.Aes256Util;
 import io.jsonwebtoken.Claims;
@@ -35,8 +35,10 @@ public class JwtAuthenticationProvider {
     }
 
     public String createRefreshToken(String userPk, Long id, UserType userType) {
+        String prefixUserType = userType.equals(UserType.USER) ? "u_" : "m_";
         String rtk = createToken(userPk, id, userType, REFRESH_TOKEN_VALIDATION_MILLISECOND, REFRESH_TOKEN_NAME);
-        RedisUtil.setDataExpireMilliSec(REFRESH_TOKEN_PREFIX + userPk, rtk, REFRESH_TOKEN_VALIDATION_MILLISECOND);
+        RedisUtil.setDataExpireMilliSec(prefixUserType + REFRESH_TOKEN_PREFIX + userPk, rtk,
+            REFRESH_TOKEN_VALIDATION_MILLISECOND);
         return rtk;
     }
 
@@ -54,13 +56,15 @@ public class JwtAuthenticationProvider {
             .compact();
     }
 
-    public TokenType validateToken(String token) {
+    public TokenType validateToken(String token, UserType userType) {
         try {
-            if (RedisUtil.isBlackList(BLACKLIST_PREFIX + token)) {
+            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            if (!claimsJws.getBody().get(KEY_ROLES, String.class).equals(userType.toString())) {
                 return TokenType.INVALID_TOKEN;
             }
 
-            Jws<Claims> claimsJws = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            String prefixUserType = userType.equals(UserType.USER) ? "u_" : "m_";
+
             if (claimsJws.getBody().getExpiration().before(new Date())) {
                 return TokenType.INVALID_TOKEN;
             }
@@ -68,6 +72,9 @@ public class JwtAuthenticationProvider {
             String tokenType = claimsJws.getBody().get(TOKEN_TYPE, String.class);
 
             if (tokenType.equals(ACCESS_TOKEN_NAME)) {
+                if (RedisUtil.isBlackList(prefixUserType + BLACKLIST_PREFIX + token)) {
+                    return TokenType.INVALID_TOKEN;
+                }
                 return TokenType.ACCESS_TOKEN;
             } else if (tokenType.equals(REFRESH_TOKEN_NAME)) {
                 return TokenType.REFRESH_TOKEN;

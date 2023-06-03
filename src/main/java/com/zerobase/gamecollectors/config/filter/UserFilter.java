@@ -4,7 +4,7 @@ import com.zerobase.gamecollectors.common.TokenType;
 import com.zerobase.gamecollectors.common.UserType;
 import com.zerobase.gamecollectors.common.UserVo;
 import com.zerobase.gamecollectors.config.JwtAuthenticationProvider;
-import com.zerobase.gamecollectors.service.ManagerDetailService;
+import com.zerobase.gamecollectors.service.UserDetailService;
 import java.io.IOException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -15,23 +15,23 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
-@WebFilter(urlPatterns = "/manager/*")
+@WebFilter(urlPatterns = "/user/*")
 @RequiredArgsConstructor
-public class ManagerFilter implements Filter {
+public class UserFilter implements Filter {
 
     private final JwtAuthenticationProvider provider;
-    private final ManagerDetailService managerDetailService;
+    private final UserDetailService userDetailService;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
         throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         String token = req.getHeader("X-AUTH-TOKEN");
-        if (provider.validateToken(token, UserType.MANAGER).equals(TokenType.INVALID_TOKEN)) {
+        if (provider.validateToken(token, UserType.USER).equals(TokenType.INVALID_TOKEN)) {
             throw new ServletException("Invalid Token");
         }
         UserVo vo = provider.getUserVo(token);
-        managerDetailService.findByIdAndEmail(vo.getId(), vo.getEmail())
+        userDetailService.findByIdAndEmail(vo.getId(), vo.getEmail())
             .orElseThrow(() -> new ServletException("Invalid Access."));
 
         chain.doFilter(request, response);
