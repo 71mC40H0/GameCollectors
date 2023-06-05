@@ -1,6 +1,6 @@
 package com.zerobase.gamecollectors.client.mailgun;
 
-import com.zerobase.gamecollectors.model.SendEmailServiceDto;
+import com.zerobase.gamecollectors.model.email.SendEmailServiceDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.http.ResponseEntity;

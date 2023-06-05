@@ -1,4 +1,4 @@
-package com.zerobase.gamecollectors.model;
+package com.zerobase.gamecollectors.model.sign;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
