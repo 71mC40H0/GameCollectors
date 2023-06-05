@@ -1,6 +1,6 @@
-package com.zerobase.gamecollectors.model;
+package com.zerobase.gamecollectors.model.sign;
 
-import com.zerobase.gamecollectors.domain.entity.Manager;
+import com.zerobase.gamecollectors.domain.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,17 +12,18 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ManagerSignUpServiceDto {
+public class UserSignUpServiceDto {
 
     private String email;
     private String password;
+    private String nickname;
     private boolean emailAuth;
 
-
-    public Manager toEntity() {
-        return Manager.builder()
+    public User toEntity() {
+        return User.builder()
             .email(this.getEmail())
             .password(this.getPassword())
+            .nickname(this.getNickname())
             .emailAuth(false)
             .build();
     }

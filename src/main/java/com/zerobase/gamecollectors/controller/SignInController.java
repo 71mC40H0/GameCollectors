@@ -1,7 +1,7 @@
 package com.zerobase.gamecollectors.controller;
 
-import com.zerobase.gamecollectors.model.SignInRequestDto;
 import com.zerobase.gamecollectors.model.TokenDto;
+import com.zerobase.gamecollectors.model.sign.SignInRequestDto;
 import com.zerobase.gamecollectors.service.ManagerSignInOutService;
 import com.zerobase.gamecollectors.service.UserSignInOutService;
 import io.swagger.annotations.ApiOperation;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(value = "/sign-in")
+@RequestMapping("/sign-in")
 @RequiredArgsConstructor
 public class SignInController {
 

@@ -1,7 +1,7 @@
 package com.zerobase.gamecollectors.controller;
 
-import com.zerobase.gamecollectors.model.ManagerSignUpRequestDto;
-import com.zerobase.gamecollectors.model.UserSignUpRequestDto;
+import com.zerobase.gamecollectors.model.sign.ManagerSignUpRequestDto;
+import com.zerobase.gamecollectors.model.sign.UserSignUpRequestDto;
 import com.zerobase.gamecollectors.response.ResponseCode;
 import com.zerobase.gamecollectors.service.ManagerSignUpService;
 import com.zerobase.gamecollectors.service.UserSignUpService;

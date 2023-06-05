@@ -1,4 +1,4 @@
-package com.zerobase.gamecollectors.model;
+package com.zerobase.gamecollectors.model.sign;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
